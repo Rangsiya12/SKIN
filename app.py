@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # ตั้งค่า LINE Bot
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
-LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv('EPUlR4ETy3L6ghpiN4E0yrrIubuBbI47Yvl1i7SlRXzxqLoi2UwuwoWoPmHl3arpiTKDYbLi2gbpFqVDvcNSV63aGcjUZvXepgJ8KbLQToCpwagGxPgBlkzXjecjd/8JdCJlrno3DUqf4h8Hkh2Q6gdB04t89/1O/w1cDnyilFU=')
+LINE_CHANNEL_SECRET = os.getenv('c6ad88a2fef4ef52a23253e8e97cc856')
 
 if not LINE_CHANNEL_ACCESS_TOKEN or not LINE_CHANNEL_SECRET:
     logger.error("LINE credentials not found in environment variables")
