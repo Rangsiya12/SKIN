@@ -1,6 +1,6 @@
 # Skin Cancer Detection LINE Bot
 
-โปรเจกต์นี้เป็น LINE Bot สำหรับตรวจจับโรคผิวหนังเบื้องต้นโดยใช้ YOLOv5
+โปรเจกต์นี้เป็น LINE Bot สำหรับตรวจจับโรคผิวหนังเบื้องต้นโดยใช้ YOLOv11
 
 ## การติดตั้ง
 
@@ -9,7 +9,7 @@
 3. ตั้งค่า environment variables:
    - `LINE_CHANNEL_ACCESS_TOKEN`
    - `LINE_CHANNEL_SECRET`
-4. วางไฟล์ model YOLOv5 ที่ `models/best.pt`
+4. วางไฟล์ model YOLOv11 ที่ `models/best.pt`
 5. รันแอป: `python app.py`
 
 ## Deployment
