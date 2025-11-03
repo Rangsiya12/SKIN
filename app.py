@@ -94,6 +94,7 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 # โหลด YOLO model
+# โหลด YOLO model
 MODEL_PATH = 'models/best.pt'
 model = None
 
@@ -110,8 +111,13 @@ if ULTRALYTICS_AVAILABLE and TORCH_AVAILABLE and NUMPY_AVAILABLE:
             model.to('cpu')
             logger.info("Custom model loaded successfully on CPU")
         else:
-            logger.warning(f"Model file not found at {MODEL_PATH}, using YOLOv8n")
-            model = YOLO('yolov8n.pt')
+            # ---------------------------------------------------
+            # แก้ไขตามคำขอ: เปลี่ยนโมเดล Fallback เป็น yolov11n.pt
+            # ---------------------------------------------------
+            logger.warning(f"Model file not found at {MODEL_PATH}, using YOLOv11n")
+            model = YOLO('yolov11n.pt') 
+            # ---------------------------------------------------
+            
             model.to('cpu')
             logger.info("Fallback model loaded successfully on CPU")
             
@@ -125,7 +131,7 @@ if ULTRALYTICS_AVAILABLE and TORCH_AVAILABLE and NUMPY_AVAILABLE:
             
     except Exception as e:
         logger.error(f"Error loading model: {e}")
-        model = None
+        model = None        
 else:
     missing_modules = []
     if not ULTRALYTICS_AVAILABLE:
