@@ -94,7 +94,7 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 # โหลด YOLO model
-MODEL_PATH = 'models'
+MODEL_PATH = 'models/best.pt'
 model = None
 
 if ULTRALYTICS_AVAILABLE and TORCH_AVAILABLE and NUMPY_AVAILABLE:
