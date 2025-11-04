@@ -448,8 +448,8 @@ def draw_bounding_boxes(image, results):
                                              outline=(255, 255, 255), width=1)
                                 
                                 # กำหนดสีของ text (ใช้สีขาวเพื่อความชัดเจนบน background สี)
-                                main_text_color = (255, 255, 255)  # ขาว
-                                conf_text_color = (255, 255, 255)  # ขาว
+                                main_text_color = (0, 0, 0)  # ดำ
+                                conf_text_color = (0, 0, 0)  # ดำ
                                 
                                 # วาด text แต่ละบรรทัดโดยไม่มี shadow (เพื่อไม่ให้ซ้อนกัน)
                                 current_y = text_y
@@ -471,7 +471,7 @@ def draw_bounding_boxes(image, results):
                                     simple_label = f"{class_name} {confidence:.1%}"
                                     
                                     # ใช้สีขาวสำหรับ text บน background สี
-                                    text_color = (255, 255, 255)
+                                    text_color = (0, 0, 0)
                                     
                                     if font:
                                         bbox = draw.textbbox((0, 0), simple_label, font=font)
