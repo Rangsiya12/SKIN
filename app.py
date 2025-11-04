@@ -307,7 +307,7 @@ def draw_bounding_boxes(image, results):
         base_font_size = max(24, min(img_width, img_height) // 25)  # ขั้นต่ำ 16px
         
         # จำกัดขนาดสูงสุดเพื่อไม่ให้ใหญ่เกินไป
-        font_size = min(base_font_size, 48)
+        font_size = 48
         
         logger.info(f"Image size: {img_width}x{img_height}, calculated font size: {font_size}")
         
