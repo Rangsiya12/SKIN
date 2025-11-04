@@ -58,8 +58,21 @@ except ImportError as e:
 
 try:
     from ultralytics import YOLO
+    import ultralytics
     ULTRALYTICS_AVAILABLE = True
-    logger.info("Ultralytics imported successfully")
+    logger.info(f"Ultralytics imported successfully - version: {ultralytics.__version__}")
+    
+    # ตรวจสอบว่ารองรับ YOLOv11 หรือไม่
+    if hasattr(ultralytics, '__version__'):
+        version_parts = ultralytics.__version__.split('.')
+        major_version = int(version_parts[0])
+        minor_version = int(version_parts[1]) if len(version_parts) > 1 else 0
+        
+        if major_version >= 8 and minor_version >= 1:
+            logger.info("✅ YOLOv11 supported")
+        else:
+            logger.warning("⚠️ Ultralytics version may not fully support YOLOv11")
+            
 except ImportError as e:
     logger.error(f"Ultralytics not available: {e}")
     ULTRALYTICS_AVAILABLE = False
@@ -70,7 +83,7 @@ app = Flask(__name__)
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
 LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
 
-# ตั้งค่า BASE_URL อัตโนมัติสำหรับ Railway - แก้ไขใหม่
+# ตั้งค่า BASE_URL อัตโนมัติสำหรับ Railway
 RAILWAY_PUBLIC_DOMAIN = os.getenv('RAILWAY_PUBLIC_DOMAIN')
 if RAILWAY_PUBLIC_DOMAIN:
     BASE_URL = f"https://{RAILWAY_PUBLIC_DOMAIN}"
@@ -94,9 +107,9 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 # โหลด YOLO model
-# โหลด YOLO model
 MODEL_PATH = 'models/best.pt'
 model = None
+MODEL_TYPE = "Unknown"
 
 if ULTRALYTICS_AVAILABLE and TORCH_AVAILABLE and NUMPY_AVAILABLE:
     try:
@@ -109,29 +122,27 @@ if ULTRALYTICS_AVAILABLE and TORCH_AVAILABLE and NUMPY_AVAILABLE:
         if os.path.exists(MODEL_PATH):
             model = YOLO(MODEL_PATH)
             model.to('cpu')
-            logger.info("Custom model loaded successfully on CPU")
+            MODEL_TYPE = "Custom YOLOv8/v11"
+            logger.info("✅ Custom model loaded successfully on CPU")
         else:
-            # ---------------------------------------------------
-            # แก้ไขตามคำขอ: เปลี่ยนโมเดล Fallback เป็น yolov11n.pt
-            # ---------------------------------------------------
             logger.warning(f"Model file not found at {MODEL_PATH}, using YOLOv11n")
-            model = YOLO('yolov11n.pt') 
-            # ---------------------------------------------------
-            
+            model = YOLO('yolo11n.pt')  # ✅ เปลี่ยนจาก yolov8n.pt เป็น yolo11n.pt
             model.to('cpu')
-            logger.info("Fallback model loaded successfully on CPU")
+            MODEL_TYPE = "YOLOv11n"
+            logger.info("✅ Fallback model (YOLOv11n) loaded successfully on CPU")
             
         # ทดสอบโมเดล
         try:
             test_img = np.zeros((100, 100, 3), dtype=np.uint8)
             test_results = model(test_img, device='cpu', verbose=False)
-            logger.info("Model test prediction successful")
+            logger.info("✅ Model test prediction successful")
         except Exception as test_error:
-            logger.warning(f"Model test failed: {test_error}")
+            logger.warning(f"⚠️ Model test failed: {test_error}")
             
     except Exception as e:
-        logger.error(f"Error loading model: {e}")
-        model = None        
+        logger.error(f"❌ Error loading model: {e}")
+        model = None
+        MODEL_TYPE = "Not Loaded"
 else:
     missing_modules = []
     if not ULTRALYTICS_AVAILABLE:
@@ -141,6 +152,7 @@ else:
     if not NUMPY_AVAILABLE:
         missing_modules.append("numpy")
     logger.warning(f"Required dependencies not available: {missing_modules}. Model not loaded.")
+    MODEL_TYPE = "Dependencies Missing"
 
 # คลาสโรคผิวหนัง
 SKIN_CANCER_CLASSES = {
@@ -168,7 +180,7 @@ CLASS_COLORS = {
 }
 
 def save_image_temporarily(image, filename):
-    """บันทึกรูปภาพชั่วคราวสำหรับ Railway - แก้ไขปัญหา bounding box"""
+    """บันทึกรูปภาพชั่วคราวสำหรับ Railway"""
     try:
         # สร้างโฟลเดอร์ static สำหรับ Railway
         static_dir = "static"
@@ -188,7 +200,7 @@ def save_image_temporarily(image, filename):
             logger.error(f"Invalid image type: {type(image)}")
             return None, None
         
-        # แปลงเป็น RGB ก่อนบันทึกเป็น JPEG (แก้ไขปัญหา bounding box หาย)
+        # แปลงเป็น RGB ก่อนบันทึกเป็น JPEG
         if image.mode in ('RGBA', 'LA', 'P'):
             background = Image.new('RGB', image.size, (255, 255, 255))
             if image.mode == 'P':
@@ -435,19 +447,9 @@ def draw_bounding_boxes(image, results):
                                 draw.rectangle([bg_x1, bg_y1, bg_x2, bg_y2], 
                                              outline=(255, 255, 255), width=1)
                                 
-                                # กำหนดสีของ text ตาม class (เพื่อความเด่นชัด)
-                                if class_id == 0:  # Melanoma (ความเสี่ยงสูง)
-                                    #main_text_color = (255, 255, 255)  # ขาว
-                                    main_text_color = (0, 0, 0)  # ดำ
-                                    conf_text_color = (0, 0, 0)  # แดงอ่อน
-                                elif class_id == 1:  # Nevus (ความเสี่ยงต่ำ)
-                                    #main_text_color = (255, 255, 255)  # ขาว
-                                    main_text_color = (0, 0, 0)  # ดำ
-                                    conf_text_color = (0, 0, 0)  # เขียวอ่อน
-                                else:  # Seborrheic Keratosis (ความเสี่ยงปานกลาง)
-                                    #main_text_color = (255, 255, 255)  # ขาว
-                                    main_text_color = (0, 0, 0)  # ดำ
-                                    conf_text_color = (0, 0, 0)  # ส้มอ่อน
+                                # กำหนดสีของ text
+                                main_text_color = (0, 0, 0)  # ดำ
+                                conf_text_color = (0, 0, 0)  # ดำ
                                 
                                 # วาด text แต่ละบรรทัดพร้อม text shadow เพื่อความชัดเจน
                                 current_y = text_y
@@ -457,80 +459,69 @@ def draw_bounding_boxes(image, results):
                                 shadow_color = (0, 0, 0)  # เงาสีดำ
                                 
                                 # บรรทัดที่ 1: ชื่อโรค
-                                # วาดเงาก่อน
                                 draw.text((text_x + shadow_offset, current_y + shadow_offset), 
                                          main_label, fill=shadow_color, font=font)
-                                # วาด text หลัก
                                 draw.text((text_x, current_y), main_label, fill=main_text_color, font=font)
                                 current_y += main_height + line_spacing
                                 
                                 # บรรทัดที่ 2: ความแม่นยำ
-                                # วาดเงาก่อน
                                 draw.text((text_x + shadow_offset, current_y + shadow_offset), 
                                          confidence_label, fill=shadow_color, font=font)
-                                # วาด text หลัก (ใช้สีตาม class)
                                 draw.text((text_x, current_y), confidence_label, fill=conf_text_color, font=font)
                                 
-                                logger.info(f"Drew text: {main_label} | {confidence_label} at ({text_x}, {text_y}) with font size {font_size}")
+                                logger.info(f"Drew text: {main_label} | {confidence_label} at ({text_x}, {text_y})")
                                 
                             except Exception as text_error:
                                 logger.error(f"Error drawing text: {text_error}")
                                 
-                                # Fallback: วาดข้อความแบบง่ายพร้อมสีที่เหมาะสม
+                                # Fallback: วาดข้อความแบบง่าย
                                 try:
                                     simple_label = f"{class_name} {confidence:.1%}"
                                     
-                                    # กำหนดสี text สำหรับ fallback
                                     if class_id == 0:  # Melanoma
-                                        text_color = (255, 200, 200)  # แดงอ่อน
+                                        text_color = (255, 200, 200)
                                     elif class_id == 1:  # Nevus
-                                        text_color = (200, 255, 200)  # เขียวอ่อน
+                                        text_color = (200, 255, 200)
                                     else:  # Seborrheic Keratosis
-                                        text_color = (255, 220, 150)  # ส้มอ่อน
+                                        text_color = (255, 220, 150)
                                     
                                     if font:
                                         bbox = draw.textbbox((0, 0), simple_label, font=font)
                                         text_width = bbox[2] - bbox[0]
                                         text_height = bbox[3] - bbox[1]
                                     else:
-                                        # ประมาณขนาด text ถ้าไม่มี font
                                         text_width = len(simple_label) * (font_size // 2)
                                         text_height = font_size
                                     
                                     text_x = x1
                                     text_y = max(0, y1 - text_height - 10)
                                     
-                                    # วาด background มีความโปร่งใส
                                     padding = 4
-                                    bg_color = tuple(int(c * 0.8) for c in color)  # สีเข้มกว่าเดิมเล็กน้อย
+                                    bg_color = tuple(int(c * 0.8) for c in color)
                                     
                                     draw.rectangle([text_x-padding, text_y-padding, 
                                                   text_x+text_width+padding, text_y+text_height+padding], 
                                                  fill=bg_color)
                                     
-                                    # วาดขอบขาว
                                     draw.rectangle([text_x-padding, text_y-padding, 
                                                   text_x+text_width+padding, text_y+text_height+padding], 
                                                  outline=(255, 255, 255), width=1)
                                     
-                                    # วาด text shadow
                                     shadow_offset = 1
                                     if font:
                                         draw.text((text_x + shadow_offset, text_y + shadow_offset), 
                                                 simple_label, fill=(0, 0, 0), font=font)
                                         draw.text((text_x, text_y), simple_label, fill=text_color, font=font)
                                     else:
-                                        # ใช้ default font ถ้าไม่มี font
                                         draw.text((text_x + shadow_offset, text_y + shadow_offset), 
                                                 simple_label, fill=(0, 0, 0))
                                         draw.text((text_x, text_y), simple_label, fill=text_color)
                                     
-                                    logger.info(f"Drew fallback text: {simple_label} with color {text_color}")
+                                    logger.info(f"Drew fallback text: {simple_label}")
                                     
                                 except Exception as fallback_error:
                                     logger.error(f"Fallback text drawing failed: {fallback_error}")
                         else:
-                            # ไม่มี font ใช้ได้ - วาดแค่ bounding box
                             logger.warning("No font available, drawing bounding box only")
                     
                 except Exception as box_error:
@@ -547,8 +538,9 @@ def draw_bounding_boxes(image, results):
         import traceback
         logger.error(f"Full traceback: {traceback.format_exc()}")
         return image
+
 def predict_skin_cancer(image):
-    """ทำนายโรคผิวหนังจากรูปภาพ - แก้ไขปัญหา bounding box"""
+    """ทำนายโรคผิวหนังจากรูปภาพ"""
     if model is None:
         return None, None, "โมเดลไม่พร้อมใช้งาน"
     
@@ -570,7 +562,6 @@ def predict_skin_cancer(image):
         
         # แปลงรูปภาพเป็น numpy array
         try:
-            # แปลงเป็น RGB ก่อน
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
@@ -585,11 +576,9 @@ def predict_skin_cancer(image):
             if hasattr(model, 'to'):
                 model.to('cpu')
             
-            # ใช้ numpy array โดยตรง
-            results = model(img_array, device='cpu', verbose=False, conf=0.1)  # ลด threshold
+            results = model(img_array, device='cpu', verbose=False, conf=0.1)
             logger.info(f"Model prediction completed, results count: {len(results)}")
             
-            # ตรวจสอบผลลัพธ์
             if len(results) > 0:
                 result = results[0]
                 if hasattr(result, 'boxes') and result.boxes is not None:
@@ -603,7 +592,7 @@ def predict_skin_cancer(image):
             logger.error(f"Model prediction traceback: {traceback.format_exc()}")
             return None, None, f"การทำนายล้มเหลว: {str(model_error)}"
         
-        # วาด bounding boxes (ทำก่อน analyze results)
+        # วาด bounding boxes
         img_with_boxes = draw_bounding_boxes(image, results)
         
         # วิเคราะห์ผลลัพธ์
@@ -612,7 +601,6 @@ def predict_skin_cancer(image):
             best_idx = 0
             best_conf = 0
             
-            # หา detection ที่มี confidence สูงสุด
             for i, box in enumerate(boxes):
                 conf = float(box.conf.item()) if hasattr(box.conf, 'item') else float(box.conf)
                 if conf > best_conf:
@@ -676,13 +664,23 @@ def create_result_message(prediction_result):
 # Routes
 @app.route("/")
 def home():
-    return """
-    <h1>LINE Bot Skin Cancer Detection - Fixed Bounding Box</h1>
-    <p>Status: Active</p>
-    <p>Model: """ + ("Loaded" if model is not None else "Not Loaded") + """</p>
-    <p>BASE_URL: """ + BASE_URL + """</p>
-    <p>Webhook URL: """ + BASE_URL + """/webhook</p>
-    <p>Bounding Box Fix: Applied</p>
+    return f"""
+    <h1>LINE Bot Skin Cancer Detection - YOLOv11n</h1>
+    <p>Status: Active ✅</p>
+    <p>Model Type: {MODEL_TYPE}</p>
+    <p>Model Status: {'✅ Loaded' if model is not None else '❌ Not Loaded'}</p>
+    <p>BASE_URL: {BASE_URL}</p>
+    <p>Webhook URL: {BASE_URL}/webhook</p>
+    <p>YOLO Version: YOLOv11n (Upgraded from v8)</p>
+    <hr>
+    <h3>System Status:</h3>
+    <ul>
+        <li>NumPy: {'✅' if NUMPY_AVAILABLE else '❌'}</li>
+        <li>PyTorch: {'✅' if TORCH_AVAILABLE else '❌'}</li>
+        <li>OpenCV: {'✅' if CV2_AVAILABLE else '❌'}</li>
+        <li>PIL: {'✅' if PIL_AVAILABLE else '❌'}</li>
+        <li>Ultralytics: {'✅' if ULTRALYTICS_AVAILABLE else '❌'}</li>
+    </ul>
     """
 
 # เพิ่ม routes หลายรูปแบบสำหรับการเสิร์ฟรูปภาพ
@@ -699,10 +697,8 @@ def serve_static_image(filename):
 def serve_image_alt(filename):
     """ให้บริการรูปภาพแบบทางเลือก"""
     try:
-        # ลองหาใน static/images ก่อน
         if os.path.exists(os.path.join('static/images', filename)):
             return send_from_directory('static/images', filename)
-        # ลองหาใน temp_images
         elif os.path.exists(os.path.join('temp_images', filename)):
             return send_from_directory('temp_images', filename)
         else:
@@ -715,10 +711,8 @@ def serve_image_alt(filename):
 def serve_image_custom(filename):
     """ให้บริการรูปภาพแบบกำหนดเอง"""
     try:
-        # ลองหาใน static/images ก่อน
         if os.path.exists(os.path.join('static/images', filename)):
             return send_from_directory('static/images', filename)
-        # ลองหาใน temp_images
         elif os.path.exists(os.path.join('temp_images', filename)):
             return send_from_directory('temp_images', filename)
         else:
@@ -742,6 +736,7 @@ def health_check():
     try:
         status = {
             "status": "ok",
+            "model_type": MODEL_TYPE,
             "model_loaded": model is not None,
             "numpy_available": NUMPY_AVAILABLE,
             "torch_available": TORCH_AVAILABLE,
@@ -753,7 +748,7 @@ def health_check():
                 "static_images": os.path.exists('static/images'),
                 "temp_images": os.path.exists('temp_images')
             },
-            "bounding_box_fix": "applied"
+            "yolo_version": "YOLOv11n"
         }
         return status, 200
     except Exception as e:
@@ -784,9 +779,10 @@ def handle_text_message(event):
     text = event.message.text.lower()
     
     if 'สวัสดี' in text or 'hello' in text.lower():
-        reply_text = """สวัสดีครับ! 👋
+        reply_text = f"""สวัสดีครับ! 👋
 
 ผมเป็นบอทช่วยตรวจโรคผิวหนังเบื้องต้น
+🤖 Model: {MODEL_TYPE}
 
 📸 วิธีใช้งาน:
 1. ส่งรูปภาพผิวหนังที่ต้องการตรวจ
@@ -805,6 +801,8 @@ def handle_text_message(event):
         reply_text = f"""✅ สถานะระบบ: พร้อมใช้งาน
 
 🤖 โมเดล: {'✅ พร้อมใช้งาน' if model is not None else '❌ ไม่พร้อม'}
+📦 Model Type: {MODEL_TYPE}
+🔥 YOLO Version: YOLOv11n
 📦 NumPy: {'✅' if NUMPY_AVAILABLE else '❌'}
 🔥 PyTorch: {'✅' if TORCH_AVAILABLE else '❌'}
 🖼️ OpenCV: {'✅' if CV2_AVAILABLE else '❌'}
@@ -814,7 +812,7 @@ def handle_text_message(event):
 📁 Static Dir: {'✅' if os.path.exists('static/images') else '❌'}
 📁 Temp Dir: {'✅' if os.path.exists('temp_images') else '❌'}
 
-🎯 ฟีเจอร์ Bounding Box: ✅ แก้ไขแล้ว
+🎯 ฟีเจอร์: YOLOv11n with Bounding Box
 
 ระบบพร้อมรับรูปภาพเพื่อวิเคราะห์และแสดงผลด้วย bounding box ที่ชัดเจน"""
         
@@ -833,12 +831,12 @@ def handle_text_message(event):
 
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image_message(event):
-    """จัดการรูปภาพ - แก้ไขปัญหา bounding box"""
+    """จัดการรูปภาพ"""
     try:
         # ส่งข้อความแจ้งว่ากำลังประมวลผล
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="🔍 กำลังวิเคราะห์รูปภาพ กรุณารอสักครู่...")
+            TextSendMessage(text="🔍 กำลังวิเคราะห์รูปภาพด้วย YOLOv11n กรุณารอสักครู่...")
         )
         
         # ดาวน์โหลดรูปภาพ
@@ -948,10 +946,11 @@ def handle_image_message(event):
         )
 
 if __name__ == "__main__":
-    print("🚀 Starting LINE Bot Server on Railway...")
+    print("🚀 Starting LINE Bot Server with YOLOv11n on Railway...")
     print(f"📡 BASE_URL: {BASE_URL}")
+    print(f"🤖 Model Type: {MODEL_TYPE}")
     print(f"🤖 Model Status: {'✅ Loaded' if model is not None else '❌ Not Loaded'}")
-    print("🎯 Bounding Box Fix: Applied ✅")
+    print("🎯 YOLO Version: YOLOv11n (Upgraded from v8) ✅")
     
     # สร้างโฟลเดอร์ที่จำเป็น
     directories = ["temp_images", "static", "static/images"]
