@@ -307,7 +307,7 @@ def draw_bounding_boxes(image, results):
         base_font_size = max(24, min(img_width, img_height) // 25)  # ขั้นต่ำ 16px
         
         # จำกัดขนาดสูงสุดเพื่อไม่ให้ใหญ่เกินไป
-        font_size = 72
+        font_size = 100
         
         logger.info(f"Image size: {img_width}x{img_height}, calculated font size: {font_size}")
         
@@ -576,7 +576,7 @@ def predict_skin_cancer(image):
             if hasattr(model, 'to'):
                 model.to('cpu')
             
-            results = model(img_array, device='cpu', verbose=False, conf=0.3)
+            results = model(img_array, device='cpu', verbose=False, conf=0.2)
             logger.info(f"Model prediction completed, results count: {len(results)}")
             
             if len(results) > 0:
