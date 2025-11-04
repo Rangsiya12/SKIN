@@ -304,10 +304,10 @@ def draw_bounding_boxes(image, results):
         img_width, img_height = img_with_boxes.size
         
         # คำนวณขนาด font ที่เหมาะสม (สัดส่วนกับขนาดรูป)
-        base_font_size = max(32, min(img_width, img_height) // 15)  # ขั้นต่ำ 16px
+        base_font_size = max(16, min(img_width, img_height) // 25)  # ขั้นต่ำ 16px
         
         # จำกัดขนาดสูงสุดเพื่อไม่ให้ใหญ่เกินไป
-        font_size = min(base_font_size,80)
+        font_size = min(base_font_size, 48)
         
         logger.info(f"Image size: {img_width}x{img_height}, calculated font size: {font_size}")
         
@@ -447,26 +447,18 @@ def draw_bounding_boxes(image, results):
                                 draw.rectangle([bg_x1, bg_y1, bg_x2, bg_y2], 
                                              outline=(255, 255, 255), width=1)
                                 
-                                # กำหนดสีของ text
-                                main_text_color = (0, 0, 0)  # ดำ
-                                conf_text_color = (0, 0, 0)  # ดำ
+                                # กำหนดสีของ text (ใช้สีขาวเพื่อความชัดเจนบน background สี)
+                                main_text_color = (255, 255, 255)  # ขาว
+                                conf_text_color = (255, 255, 255)  # ขาว
                                 
-                                # วาด text แต่ละบรรทัดพร้อม text shadow เพื่อความชัดเจน
+                                # วาด text แต่ละบรรทัดโดยไม่มี shadow (เพื่อไม่ให้ซ้อนกัน)
                                 current_y = text_y
                                 
-                                # เพิ่ม text shadow (เงา) เพื่อให้อ่านง่าย
-                                shadow_offset = max(1, font_size // 16)
-                                shadow_color = (0, 0, 0)  # เงาสีดำ
-                                
                                 # บรรทัดที่ 1: ชื่อโรค
-                                draw.text((text_x + shadow_offset, current_y + shadow_offset), 
-                                         main_label, fill=shadow_color, font=font)
                                 draw.text((text_x, current_y), main_label, fill=main_text_color, font=font)
                                 current_y += main_height + line_spacing
                                 
                                 # บรรทัดที่ 2: ความแม่นยำ
-                                draw.text((text_x + shadow_offset, current_y + shadow_offset), 
-                                         confidence_label, fill=shadow_color, font=font)
                                 draw.text((text_x, current_y), confidence_label, fill=conf_text_color, font=font)
                                 
                                 logger.info(f"Drew text: {main_label} | {confidence_label} at ({text_x}, {text_y})")
@@ -474,16 +466,12 @@ def draw_bounding_boxes(image, results):
                             except Exception as text_error:
                                 logger.error(f"Error drawing text: {text_error}")
                                 
-                                # Fallback: วาดข้อความแบบง่าย
+                                # Fallback: วาดข้อความแบบง่าย (ไม่มี shadow)
                                 try:
                                     simple_label = f"{class_name} {confidence:.1%}"
                                     
-                                    if class_id == 0:  # Melanoma
-                                        text_color = (255, 200, 200)
-                                    elif class_id == 1:  # Nevus
-                                        text_color = (200, 255, 200)
-                                    else:  # Seborrheic Keratosis
-                                        text_color = (255, 220, 150)
+                                    # ใช้สีขาวสำหรับ text บน background สี
+                                    text_color = (255, 255, 255)
                                     
                                     if font:
                                         bbox = draw.textbbox((0, 0), simple_label, font=font)
@@ -507,14 +495,10 @@ def draw_bounding_boxes(image, results):
                                                   text_x+text_width+padding, text_y+text_height+padding], 
                                                  outline=(255, 255, 255), width=1)
                                     
-                                    shadow_offset = 1
+                                    # วาดแค่ text เดียว ไม่มี shadow
                                     if font:
-                                        draw.text((text_x + shadow_offset, text_y + shadow_offset), 
-                                                simple_label, fill=(0, 0, 0), font=font)
                                         draw.text((text_x, text_y), simple_label, fill=text_color, font=font)
                                     else:
-                                        draw.text((text_x + shadow_offset, text_y + shadow_offset), 
-                                                simple_label, fill=(0, 0, 0))
                                         draw.text((text_x, text_y), simple_label, fill=text_color)
                                     
                                     logger.info(f"Drew fallback text: {simple_label}")
@@ -576,7 +560,7 @@ def predict_skin_cancer(image):
             if hasattr(model, 'to'):
                 model.to('cpu')
             
-            results = model(img_array, device='cpu', verbose=False, conf=0.2)
+            results = model(img_array, device='cpu', verbose=False, conf=0.1)
             logger.info(f"Model prediction completed, results count: {len(results)}")
             
             if len(results) > 0:
