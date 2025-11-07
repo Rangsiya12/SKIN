@@ -759,116 +759,129 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
-    """จัดการข้อความข้อความ"""
+    """จัดการข้อความข้อความ (Handle text messages)"""
     text = event.message.text.lower()
     
-    if 'สวัสดี' in text or 'hello' in text.lower():
-        reply_text = f"""สวัสดีครับ! 👋
+    if 'สวัสดี' in text or 'hello' in text:
+        reply_text = f"""สวัสดีครับ! 👋  
+Hello! 👋  
 
-ผมเป็นบอทช่วยตรวจโรคผิวหนังเบื้องต้น
-🤖 Model: {MODEL_TYPE}
+ผมเป็นบอทช่วยตรวจโรคผิวหนังเบื้องต้น  
+I'm a bot that helps with preliminary skin disease detection.  
 
-📸 วิธีใช้งาน:
-1. ส่งรูปภาพผิวหนังที่ต้องการตรวจ
-2. รอผลการวิเคราะห์
-3. ได้รับรูปภาพพร้อม bounding box สีใส
-4. ได้รับคำแนะนำเบื้องต้น
+🤖 โมเดลที่ใช้ / Model Type: {MODEL_TYPE}  
 
-🎯 สีของกรอบ:
-🔴 แดง = ความเสี่ยงสูง
-🟠 ส้ม = ความเสี่ยงปานกลาง
-🟢 เขียว = ความเสี่ยงต่ำ 
+📸 วิธีใช้งาน / How to use:
+1️⃣ ส่งรูปภาพผิวหนังที่ต้องการตรวจ  
+   Send a skin photo you want to analyze.  
+2️⃣ รอผลการวิเคราะห์  
+   Wait for the analysis result.  
+3️⃣ ได้รับรูปพร้อมกรอบสีแสดงผล  
+   Receive an image with color-coded bounding boxes.  
+4️⃣ ได้รับคำแนะนำเบื้องต้น  
+   Get preliminary recommendations.  
 
-⚠️ สำคัญ: ผลการตรวจเป็นเพียงข้อมูลเบื้องต้น ควรปรึกษาแพทย์เพื่อการวินิจฉัยที่แม่นยำ"""
+🎯 สีของกรอบ / Box Colors:
+🔴 แดง = ความเสี่ยงสูง (High risk)  
+🟠 ส้ม = ความเสี่ยงปานกลาง (Medium risk)  
+🟢 เขียว = ความเสี่ยงต่ำ (Low risk)  
+
+⚠️ หมายเหตุ / Note:
+ผลการตรวจเป็นเพียงข้อมูลเบื้องต้น ควรปรึกษาแพทย์เพื่อการวินิจฉัยที่แม่นยำ  
+The analysis is for preliminary information only. Please consult a doctor for accurate diagnosis."""
         
-    elif 'สถานะ' in text or 'status' in text.lower():
-        reply_text = f"""✅ สถานะระบบ: พร้อมใช้งาน
+    elif 'สถานะ' in text or 'status' in text:
+        reply_text = f"""✅ สถานะระบบ: พร้อมใช้งาน  
+✅ System Status: Operational  
 
-🤖 โมเดล: {'✅ พร้อมใช้งาน' if model is not None else '❌ ไม่พร้อม'}
-📦 Model Type: {MODEL_TYPE}
-🔥 YOLO Version: YOLOv11n
-📦 NumPy: {'✅' if NUMPY_AVAILABLE else '❌'}
-🔥 PyTorch: {'✅' if TORCH_AVAILABLE else '❌'}
-🖼️ OpenCV: {'✅' if CV2_AVAILABLE else '❌'}
-🎨 PIL: {'✅' if PIL_AVAILABLE else '❌'}
-🚀 Ultralytics: {'✅' if ULTRALYTICS_AVAILABLE else '❌'}
-🌐 Base URL: {BASE_URL}
-📁 Static Dir: {'✅' if os.path.exists('static/images') else '❌'}
-📁 Temp Dir: {'✅' if os.path.exists('temp_images') else '❌'}
+🤖 โมเดล: {'✅ พร้อมใช้งาน' if model is not None else '❌ ไม่พร้อม'}  
+🤖 Model: {'✅ Loaded' if model is not None else '❌ Not Loaded'}  
 
-🎯 ฟีเจอร์: YOLOv11n with Bounding Box
+📦 Model Type: {MODEL_TYPE}  
+🔥 YOLO Version: YOLOv11n  
 
-ระบบพร้อมรับรูปภาพเพื่อวิเคราะห์และแสดงผลด้วย bounding box ที่ชัดเจน"""
+📦 NumPy: {'✅' if NUMPY_AVAILABLE else '❌'}  
+🔥 PyTorch: {'✅' if TORCH_AVAILABLE else '❌'}  
+🖼️ OpenCV: {'✅' if CV2_AVAILABLE else '❌'}  
+🎨 PIL: {'✅' if PIL_AVAILABLE else '❌'}  
+🚀 Ultralytics: {'✅' if ULTRALYTICS_AVAILABLE else '❌'}  
+
+🌐 Base URL: {BASE_URL}  
+📁 Static Dir: {'✅' if os.path.exists('static/images') else '❌'}  
+📁 Temp Dir: {'✅' if os.path.exists('temp_images') else '❌'}  
+
+🎯 ฟีเจอร์ / Features: YOLOv11n with Bounding Box Detection  
+ระบบพร้อมรับรูปภาพเพื่อวิเคราะห์และแสดงผลด้วยกรอบสี  
+Ready to receive images for analysis and bounding box display."""
         
     else:
-        reply_text = """กรุณาส่งรูปภาพผิวหนังที่ต้องการตรวจ 📸
+        reply_text = """กรุณาส่งรูปภาพผิวหนังที่ต้องการตรวจ 📸  
+Please send a skin photo you want to analyze.  
 
-คำสั่งที่ใช้ได้:
-• "สถานะ" - ตรวจสอบสถานะระบบ
+คำสั่งที่ใช้ได้ / Available Commands:
+• "สถานะ" หรือ "status" - ตรวจสอบสถานะระบบ  
+  Check system status  
 
-🎯 ระบบจะส่งรูปภาพกลับพร้อมกรอบสีแสดงผลการตรวจที่ชัดเจน"""
+🎯 ระบบจะส่งรูปภาพกลับพร้อมกรอบสีแสดงผลการตรวจที่ชัดเจน  
+The system will return an image with clearly visible bounding boxes."""
     
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=reply_text)
     )
 
+
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image_message(event):
-    """จัดการรูปภาพ"""
+    """จัดการรูปภาพ (Handle image messages)"""
     try:
-        # ส่งข้อความแจ้งว่ากำลังประมวลผล
+        # แจ้งว่ากำลังวิเคราะห์ / Inform user about processing
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="🔍 กำลังวิเคราะห์รูปภาพด้วย YOLOv11n กรุณารอสักครู่...")
+            TextSendMessage(text="🔍 กำลังวิเคราะห์รูปภาพด้วย YOLOv11n กรุณารอสักครู่...\n\n🔍 Analyzing your image with YOLOv11n, please wait...")
         )
         
-        # ดาวน์โหลดรูปภาพ
+        # ดาวน์โหลดรูปภาพจาก LINE
         image = download_image_from_line(event.message.id)
         if image is None:
             line_bot_api.push_message(
                 event.source.user_id,
-                TextSendMessage(text="ไม่สามารถดาวน์โหลดรูปภาพได้ กรุณาลองใหม่")
+                TextSendMessage(text="❌ ไม่สามารถดาวน์โหลดรูปภาพได้ กรุณาลองใหม่\n❌ Unable to download the image. Please try again.")
             )
             return
         
         logger.info(f"Processing image: {image.size}, mode: {image.mode}")
         
-        # ทำการทำนาย
+        # ทำการทำนาย / Perform prediction
         prediction, img_with_boxes, error = predict_skin_cancer(image)
         
         if error:
             line_bot_api.push_message(
                 event.source.user_id,
-                TextSendMessage(text=f"เกิดข้อผิดพลาด: {error}")
+                TextSendMessage(text=f"เกิดข้อผิดพลาด: {error}\n\nAn error occurred: {error}")
             )
             return
         
-        # สร้างข้อความผลลัพธ์
+        # สร้างข้อความผลลัพธ์ / Create result message
         result_message = create_result_message(prediction)
         
-        # บันทึกและส่งรูปภาพที่มี bounding box
+        # บันทึกและส่งรูปภาพพร้อมกรอบสี / Save and send processed image
         if img_with_boxes is not None:
             try:
-                # สร้างชื่อไฟล์ unique
                 timestamp = int(time.time())
                 random_num = random.randint(1000, 9999)
                 filename = f"result_{timestamp}_{random_num}.jpg"
                 
                 logger.info(f"Saving processed image: {filename}")
                 
-                # บันทึกรูปภาพชั่วคราว
                 image_urls, file_path = save_image_temporarily(img_with_boxes, filename)
-                
                 success_sent = False
                 
                 if image_urls and file_path:
-                    # ตรวจสอบว่าไฟล์ถูกบันทึกจริง
                     if os.path.exists(file_path):
                         file_size = os.path.getsize(file_path)
                         logger.info(f"Image file saved successfully: {file_path}, size: {file_size} bytes")
                         
-                        # ลองส่งรูปภาพด้วย URL แต่ละตัว
                         for i, image_url in enumerate(image_urls):
                             try:
                                 logger.info(f"Attempting to send image with URL {i+1}: {image_url}")
@@ -878,14 +891,12 @@ def handle_image_message(event):
                                         original_content_url=image_url,
                                         preview_image_url=image_url
                                     ),
-                                    TextSendMessage(text=result_message)
+                                    TextSendMessage(text=f"{result_message}\n\n✅ Image analysis completed successfully.")
                                 ]
                                 
                                 line_bot_api.push_message(event.source.user_id, messages)
-                                logger.info(f"Image sent successfully with URL: {image_url}")
                                 success_sent = True
                                 break
-                                
                             except Exception as url_error:
                                 logger.warning(f"Failed to send image with URL {image_url}: {url_error}")
                                 continue
@@ -893,30 +904,24 @@ def handle_image_message(event):
                         logger.error(f"Image file was not saved: {file_path}")
                 
                 if not success_sent:
-                    # ถ้าส่งรูปภาพไม่ได้ทุก URL ส่งแค่ข้อความ
-                    logger.error("All image URLs failed, sending text only")
                     line_bot_api.push_message(
                         event.source.user_id,
-                        TextSendMessage(text=f"{result_message}\n\n⚠️ ไม่สามารถส่งรูปภาพผลลัพธ์ได้ แต่การวิเคราะห์เสร็จสมบูรณ์แล้ว")
+                        TextSendMessage(text=f"{result_message}\n\n⚠️ ไม่สามารถส่งรูปภาพผลลัพธ์ได้ แต่การวิเคราะห์เสร็จสมบูรณ์แล้ว\n⚠️ Unable to send the processed image, but the analysis is complete.")
                     )
-                else:
-                    logger.info("Image with bounding boxes sent successfully")
                     
             except Exception as img_error:
                 logger.error(f"Error in image processing: {img_error}")
                 import traceback
                 logger.error(f"Image processing traceback: {traceback.format_exc()}")
                 
-                # ส่งแค่ข้อความผลลัพธ์
                 line_bot_api.push_message(
                     event.source.user_id,
-                    TextSendMessage(text=f"{result_message}\n\n⚠️ เกิดข้อผิดพลาดในการส่งรูปภาพผลลัพธ์: {str(img_error)}")
+                    TextSendMessage(text=f"{result_message}\n\n⚠️ เกิดข้อผิดพลาดในการส่งรูปภาพผลลัพธ์: {str(img_error)}\n⚠️ An error occurred while sending the result image: {str(img_error)}")
                 )
         else:
-            # ไม่มีรูปภาพ ส่งแค่ข้อความ
             line_bot_api.push_message(
                 event.source.user_id,
-                TextSendMessage(text=result_message)
+                TextSendMessage(text=f"{result_message}\n\n✅ การวิเคราะห์เสร็จสมบูรณ์โดยไม่มีรูปภาพ\n✅ Analysis completed without image output.")
             )
             
     except Exception as e:
@@ -926,7 +931,7 @@ def handle_image_message(event):
         
         line_bot_api.push_message(
             event.source.user_id,
-            TextSendMessage(text=f"เกิดข้อผิดพลาดในการประมวลผล: {str(e)}")
+            TextSendMessage(text=f"เกิดข้อผิดพลาดในการประมวลผล: {str(e)}\n\nAn error occurred during processing: {str(e)}")
         )
 
 if __name__ == "__main__":
