@@ -616,34 +616,38 @@ def predict_skin_cancer(image):
         return None, None, f"เกิดข้อผิดพลาดในการวิเคราะห์: {str(e)}"
 
 def create_result_message(prediction_result):
-    """สร้างข้อความผลลัพธ์"""
+    """สร้างข้อความผลลัพธ์ (ไทย–อังกฤษ)"""
     if prediction_result is None:
-        return "ไม่สามารถวิเคราะห์รูปภาพได้"
-    
-    message = f"""🏥 ผลการวิเคราะห์ภาพผิวหนัง
+        return "ไม่สามารถวิเคราะห์รูปภาพได้ / Unable to analyze the image."
 
-🔍 ผลการตรวจพบ: {prediction_result['class_name']}
-📊 ความแม่นยำ: {prediction_result['confidence']:.2%}
-⚠️ ระดับความเสี่ยง: {prediction_result['risk_level']}
-📍 จำนวนจุดที่ตรวจพบ: {prediction_result.get('total_detections', 1)} จุด
+    message = f"""🏥 ผลการวิเคราะห์ภาพผิวหนัง (Skin Analysis Result)
 
-⚕️ คำแนะนำ:"""
-    
-    if prediction_result['class_id'] == 0:  # เมลาโนมา
-        message += "\n• ควรปรึกษาแพทย์ผิวหนังโดยเร็ว\n• อาจต้องการการตรวจเพิ่มเติม"
-    elif prediction_result['class_id'] == 2:  # เซบอร์รีอิก เคราโทซิส
-        message += "\n• ควรติดตามอาการ\n• หากมีการเปลี่ยนแปลง ควรพบแพทย์"
-    else:  # เนวัส
-        message += "\n• ดูแลสุขภาพผิวหนังอย่างสม่ำเสมอ\n• หลีกเลี่ยงแสงแดดจัด"
-    
-    message += "\n\n🎯 กรอบสีในรูปภาพ:"
-    message += "\n🔴 แดง = ความเสี่ยงสูง (เมลาโนมา)"
-    message += "\n🟠 ส้ม = ความเสี่ยงปานกลาง (เซบอร์รีอิก เคราโทซิส)"
-    message += "\n🟢 เขียว = ความเสี่ยงต่ำ (เนวัส)"
-    
-    message += "\n\n⚠️ หมายเหตุ: ผลนี้เป็นเพียงการประเมินเบื้องต้น ควรปรึกษาแพทย์เพื่อการวินิจฉัยที่แม่นยำ"
-    
+🔍 ผลการตรวจพบ (Detected): {prediction_result['class_name']}
+📊 ความแม่นยำ (Confidence): {prediction_result['confidence']:.2%}
+⚠️ ระดับความเสี่ยง (Risk Level): {prediction_result['risk_level']}
+📍 จำนวนจุดที่ตรวจพบ (Detected Areas): {prediction_result.get('total_detections', 1)} จุด (spots)
+
+⚕️ คำแนะนำ (Recommendations):"""
+
+    if prediction_result['class_id'] == 0:  # เมลาโนมา (Melanoma)
+        message += "\n• ควรปรึกษาแพทย์ผิวหนังโดยเร็ว / Consult a dermatologist as soon as possible."
+        message += "\n• อาจต้องการการตรวจเพิ่มเติม / Further examination may be required."
+    elif prediction_result['class_id'] == 2:  # เซบอร์รีอิก เคราโทซิส (Seborrheic Keratosis)
+        message += "\n• ควรติดตามอาการ / Monitor the condition."
+        message += "\n• หากมีการเปลี่ยนแปลงควรพบแพทย์ / Consult a doctor if there are any changes."
+    else:  # เนวัส (Nevus)
+        message += "\n• ดูแลสุขภาพผิวหนังอย่างสม่ำเสมอ / Maintain good skin care."
+        message += "\n• หลีกเลี่ยงแสงแดดจัด / Avoid excessive sun exposure."
+
+    message += "\n\n🎯 กรอบสีในรูปภาพ (Bounding Box Colors):"
+    message += "\n🔴 แดง = ความเสี่ยงสูง (High Risk - Melanoma)"
+    message += "\n🟠 ส้ม = ความเสี่ยงปานกลาง (Medium Risk - Seborrheic Keratosis)"
+    message += "\n🟢 เขียว = ความเสี่ยงต่ำ (Low Risk - Nevus)"
+
+    message += "\n\n⚠️ หมายเหตุ (Note): ผลนี้เป็นเพียงการประเมินเบื้องต้น ควรปรึกษาแพทย์เพื่อการวินิจฉัยที่แม่นยำ / This is a preliminary assessment. Please consult a medical professional for an accurate diagnosis."
+
     return message
+
 
 # Routes
 @app.route("/")
